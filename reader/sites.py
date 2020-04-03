@@ -1,8 +1,10 @@
 import asyncio
+import json
 import logging
 
 import aiohttp
 import feedparser
+import socketio
 
 from typing import Dict, List
 
@@ -32,8 +34,13 @@ async def store(data: List, site: str):
             lambda offer: 'python' not in offer.get('tags'), data.get('entries')
         )
     )
+    sio = socketio.AsyncClient()
+    await sio.connect('http://localhost:3000')
+    await sio.emit("python-message", json.dumps(python_offers))
 
-    logging.info(f"Python offers found: {len(python_offers)}")
+    # await sio.connect()
+    # sio.emit("python-message", {"name": "foobert"})
+    # logging.info(f"Python offers found: {len(python_offers)}")
 
 
 async def fetch(session: aiohttp.ClientSession, url: str) -> str:
@@ -61,6 +68,7 @@ async def fetch_rss_feeds(loop: asyncio.AbstractEventLoop, feeds: Dict):
         async with aiohttp.ClientSession(loop=loop) as session:
             html = await fetch(session, feed.get('url'))
             rss = feedparser.parse(html)
+
             stored_records = await store(rss, feed.get('name'))
             logging.info(stored_records)
 
