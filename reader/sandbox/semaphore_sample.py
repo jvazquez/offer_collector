@@ -3,7 +3,7 @@ import random
 import threading
 import time
 
-from basic_loging_configuration import initialize_logging
+from sandbox.basic_loging_configuration import initialize_logging
 
 initialize_logging()
 semaphore = threading.Semaphore(0)

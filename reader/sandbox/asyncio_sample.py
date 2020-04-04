@@ -1,11 +1,10 @@
 import asyncio
 import logging
-import pprint
 
 import aiohttp
 import feedparser
 
-from basic_loging_configuration import initialize_logging
+from sandbox.basic_loging_configuration import initialize_logging
 from sites import SITES
 
 initialize_logging()
