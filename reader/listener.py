@@ -1,39 +1,38 @@
 import asyncio
-import datetime
-import json
 import logging
 import os
 
-import aiohttp
-import feedparser
-import socketio
-
 from typing import Dict, List
 
-from sandbox.basic_loging_configuration import initialize_logging
+import aiohttp
+import feedparser
+
+from dateutil.parser import parse
+from motor.motor_asyncio import AsyncIOMotorClient
+
+from utils.basic_loging_configuration import initialize_logging
 
 initialize_logging()
 SITES = [{
         'url': 'http://stackoverflow.com/jobs/feed?r=true',
-        'name': 'StackOverflow'
+        'name': 'StackOverflow',
     },
     {
         'url': 'https://remoteok.io/remote-jobs.rss',
-        'name': 'Remoteok'
+        'name': 'RemoteOk'
     },
 ]
-
-STORAGE = os.getenv('STORAGE', 'http://localhost:3000')
+STORAGE = os.getenv('STORAGE', 'mongodb://localhost:27017')
+DATABASE_NAME = os.getenv('DATABASE_NAME', 'feeds')
+COLLECTION_NAME = os.getenv('COLLECTION_NAME', 'collected_feeds')
 DEBUG = True if os.getenv('DEBUG') is not None else False
 INTERVAL = int(os.getenv('INTERVAL', 60))
-
-
-def json_serial(obj):
-    """JSON serializer for objects not serializable by default json code"""
-
-    if isinstance(obj, (datetime.datetime, datetime.date)):
-        return obj.isoformat()
-    raise TypeError(f"Type {type(obj)} not serializable")
+EXCLUDE_FIELDS = ['published_parsed',
+                  'summary_detail',
+                  'updated_parsed',
+                  'title_detail',
+                  'links',
+                  'id']
 
 
 async def store(data: List):
@@ -43,14 +42,26 @@ async def store(data: List):
     :param data:
     :return:
     """
-    sio = socketio.AsyncClient()
-    logging.info(f"Connecting to {STORAGE}")
-    await sio.connect(STORAGE)
-    await sio.emit(
-        "python-message",
-        json.dumps(data.get('entries'),
-                   default=json_serial)
-    )
+    try:
+        client = AsyncIOMotorClient(STORAGE)
+        database = client[DATABASE_NAME]
+        collection = database[COLLECTION_NAME]
+
+        clean_records = list()
+        for entry in data.get('entries'):
+            record = {key: value for key, value in entry.items()
+                      if key not in EXCLUDE_FIELDS}
+            record['published'] = parse(record['published'])
+            if record.get('updated'):
+                record['updated'] = parse(record['updated'])
+            clean_records.append(record)
+
+        results = await collection.insert_many(clean_records)
+        logging.info(f"Result of insert operation {results.inserted_ids}")
+    except Exception:
+        logging.exception("Problem with motor")
+    finally:
+        return True
 
 
 async def fetch(session: aiohttp.ClientSession, url: str) -> str:
@@ -105,6 +116,10 @@ async def job_fetch(interval: int, main_loop: asyncio.AbstractEventLoop):
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     loop.set_debug(DEBUG)
-    loop.create_task(job_fetch(INTERVAL, loop))
-    loop.run_forever()
-    loop.close()
+    loop.run_until_complete(fetch_rss_feeds(loop, SITES))
+    # TODO When this is deployed, I'll scan daily so add optparse
+    # or perhaps an asyncserver that listens to authenticated requests?
+    # loop.create_task(job_fetch(INTERVAL, loop))
+    # loop.run_forever()
+    # loop.close()
+    loop.stop()

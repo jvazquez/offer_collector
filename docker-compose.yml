@@ -8,24 +8,23 @@ services:
     command: ["python", "/app/reader/listener.py"]
     env_file:
       - .env
-  store:
-    image: offer_store
-    container_name: offer_store
+    depends_on:
+      - store_db
+    links:
+      - store_db
+  store_db:
+    container_name: store_db
+    image: mongo:4.2.5
     volumes:
-      - ./store:/app/store
-  db:
-    container_name: offers_db
-    image: postgres:9.5.2
-    volumes:
-      - develop_offers_db:/var/lib/postgresql/data
+      - develop_store_db:/data/db
     env_file:
       - .env
     ports:
-      - 5432:5432
+      - 27017:27017
 networks:
   default:
     external:
-      name: develop_offers
+      name: develop_network
 volumes:
-  develop_offers_db:
+  develop_store_db:
     external: true
