@@ -7,9 +7,13 @@ feedparser==5.2.1
 idna==2.9
 motor==2.1.0
 multidict==4.7.5
+numpy==1.18.2
+pandas==1.0.3
 pymongo==3.10.1
 python-dateutil==2.8.1
 python-engineio==3.12.1
 python-socketio==4.5.1
+pytz==2019.3
 six==1.14.0
+XlsxWriter==1.2.8
 yarl==1.4.2

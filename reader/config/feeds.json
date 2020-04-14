@@ -16,9 +16,25 @@
       "updated_parsed",
       "title_detail",
       "links",
-      "id"
+      "id",
+      "author_detail",
+      "authors",
+      "updated",
+      "guidislink"
     ],
-    "debug": true
-  }
+    "mappings": {
+      "author": "company"
+    },
+    "output_header": [
+      "title",
+      "company",
+      "link",
+      "published",
+      "tags",
+      "summary"
+    ],
+    "storage": "csv"
+  },
+  "debug": true
 }
 
