@@ -1,0 +1,24 @@
+{
+  "feeds": [
+    {
+      "name": "Stack overflow remote",
+      "url": "http://stackoverflow.com/jobs/feed?r=true"
+    },
+    {
+      "name": "RemoteOk",
+      "url": "https://remoteok.io/remote-jobs.rss"
+    }
+  ],
+  "parseOptions": {
+    "excluded_fields": [
+      "published_parsed",
+      "summary_detail",
+      "updated_parsed",
+      "title_detail",
+      "links",
+      "id"
+    ],
+    "debug": true
+  }
+}
+

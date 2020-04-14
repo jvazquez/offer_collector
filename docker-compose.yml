@@ -1,17 +1,17 @@
 version: '3.7'
 services:
-  offers_consumer:
-    image: offer_reader
-    container_name: offer_reader
-    volumes:
-      - ./reader:/app/reader
-    command: ["python", "/app/reader/listener.py"]
-    env_file:
-      - .env
-    depends_on:
-      - store_db
-    links:
-      - store_db
+#  offers_consumer:
+#    image: offer_reader
+#    container_name: offer_reader
+#    volumes:
+#      - ./reader:/app/reader
+#    command: ["python", "/app/reader/listener.py"]
+#    env_file:
+#      - .env
+#    depends_on:
+#      - store_db
+#    links:
+#      - store_db
   store_db:
     container_name: store_db
     image: mongo:4.2.5
