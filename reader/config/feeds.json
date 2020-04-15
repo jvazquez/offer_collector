@@ -33,7 +33,7 @@
       "tags",
       "summary"
     ],
-    "storage": "csv"
+    "storage": "database"
   },
   "debug": true
 }

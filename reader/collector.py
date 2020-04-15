@@ -21,20 +21,35 @@ DATABASE_NAME = os.getenv('DATABASE_NAME', 'feeds')
 COLLECTION_NAME = os.getenv('COLLECTION_NAME', 'collected_feeds')
 
 
+def translate_fields(data: List, options: Dict) -> Dict:
+    """
+    Translate the external feeds to the expected format I want
+
+    :param data:
+    :param options:
+    :return:
+    """
+    mapped_fields = options.get("mappings")
+    sane_headers = options.get("output_header")
+
+    for raw_entry in data:
+        clean_entry = dict()
+        for raw_title, value in raw_entry.items():
+            title = get_translated(mapped_fields, raw_title, sane_headers)
+            if title and value:
+                if title == "published":
+                    value = parse(value)
+                clean_entry.update({title: value})
+        yield clean_entry
+
+
 async def store_with_database(data: List, options: Dict):
     try:
         client = AsyncIOMotorClient(STORAGE)
         database = client[DATABASE_NAME]
         collection = database[COLLECTION_NAME]
-
-        clean_records = list()
-        for entry in data:
-            record = {key: value for key, value in entry.items()
-                      if key not in options['excluded_fields']}
-            record['published'] = parse(record['published'])
-            clean_records.append(record)
-
-        results = await collection.insert_many(clean_records)
+        logging.info(f"Using {COLLECTION_NAME}")
+        results = await collection.insert_many(data)
         logging.info(f"Result of insert operation {results.inserted_ids}")
     except Exception:
         logging.exception("Problem with motor")
@@ -95,8 +110,12 @@ async def store(data: List, options: Dict):
     logging.info(f'Will store using {options.get("storage")}')
     if options.get("storage") == "csv":
         await store_with_file(data, options)
-    else:
-        await store_with_database(data, options)
+    elif options.get("storage") == "database":
+        rows = list()
+        for row in translate_fields(data, options):
+            rows.append(row)
+
+        await store_with_database(rows, options)
 
 
 async def fetch(session: aiohttp.ClientSession, url: str) -> str:
@@ -138,7 +157,7 @@ async def fetch_rss_feeds(main_loop: asyncio.AbstractEventLoop,
             data = await main_loop.run_in_executor(None, parse_rss, html)
             storage += data.get("entries")
 
-        await store(storage, configuration.get("parseOptions"))
+    await store(storage, configuration.get("parseOptions"))
 
 if __name__ == '__main__':
     config_collector = CollectorConfig()
